@@ -16,17 +16,27 @@ import { baseUSDC } from "@daimo/contract";
 import { getAddress } from "viem";
 import BucketExplorer from "./BucketExplorer";
 
-function ExampleCard() {
+function FeedbackForm() {
+  const [feedback, setFeedback] = useState("");
+  
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Welcome to the vibes.engineering template</CardTitle>
+        <CardTitle>Submit Anonymous Feedback</CardTitle>
         <CardDescription>
-          This is an example card that you can customize or remove
+          Pay 1 USDC to submit feedback. If your feedback is selected, you&apos;ll receive all collected USDC!
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Label>Place content in a Card here.</Label>
+        <div className="flex flex-col gap-4">
+          <textarea
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            className="w-full px-3 py-2 border rounded-md border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Enter your feedback here..."
+            rows={4}
+          />
+        </div>
       </CardContent>
     </Card>
   );
@@ -84,10 +94,8 @@ export default function MiniApp() {
 
   return (
     <div className="w-[400px] mx-auto py-2 px-2 space-y-4">
-      <ExampleCard />
+      <FeedbackForm />
       <PaymentComponent />
-      <FileUploadCard />
-      <BucketExplorer />
     </div>
   );
 }

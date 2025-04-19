@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
 import { createClient } from "~/lib/supabase/client";
 
@@ -103,11 +104,11 @@ export default function BucketExplorer() {
     }
   }, [page, token, fetchFiles]);
 
-  const fetchNextPage = () => {
+  const fetchNextPage = useCallback(() => {
     if (!loading && hasMore) {
       setPage((prev) => prev + 1);
     }
-  };
+  }, [loading, hasMore]);
 
   const observerRef = useRef<HTMLDivElement>(null);
 
@@ -122,8 +123,9 @@ export default function BucketExplorer() {
       { threshold: 1.0 },
     );
     observer.observe(observerRef.current);
+    const currentRef = observerRef.current;
     return () => {
-      if (observerRef.current) observer.unobserve(observerRef.current);
+      if (currentRef) observer.unobserve(currentRef);
     };
   }, [observerRef, hasMore, loading, fetchNextPage]);
 
@@ -153,9 +155,11 @@ export default function BucketExplorer() {
                 <div className="font-semibold">{file.name}</div>
                 {file.metadata.mimetype?.startsWith("image/") &&
                 file?.publicUrl ? (
-                  <img
+                  <Image
                     src={file.publicUrl}
                     alt={file.name}
+                    width={400}
+                    height={300}
                     className="mt-2 h-32 w-auto object-cover rounded"
                   />
                 ) : (
