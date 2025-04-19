@@ -8,100 +8,91 @@ import {
   CardDescription,
   CardContent,
 } from "~/components/ui/card";
-import { DaimoPayButton } from "@daimo/pay";
 import { useFrameSDK } from "~/hooks/useFrameSDK";
-import { baseUSDC } from "@daimo/contract";
-import { getAddress } from "viem";
-import { FEEDBACK_COST, PROTOCOL_GUILD_ADDRESS } from "~/lib/constants";
+import { ROUND_STORAGE_KEY } from "~/lib/constants";
 
-function FeedbackForm({ onSubmit }: { onSubmit: (feedback: string) => void }) {
-  const [feedback, setFeedback] = useState("");
+function CreateRoundForm() {
+  const [prompt, setPrompt] = useState("");
+  const [contentLink, setContentLink] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [roundId, setRoundId] = useState<string | null>(null);
 
   const handleSubmit = () => {
-    if (!feedback.trim()) return;
+    if (!prompt.trim()) return;
     setIsSubmitting(true);
-    onSubmit(feedback);
+    
+    // Generate a unique roundId
+    const newRoundId = `round_${Date.now()}`;
+    
+    // Store round data in localStorage
+    const roundData = {
+      id: newRoundId,
+      prompt: prompt.trim(),
+      contentLink: contentLink.trim(),
+      createdAt: Date.now(),
+      feedback: []
+    };
+    
+    const existingRounds = JSON.parse(localStorage.getItem(ROUND_STORAGE_KEY) || "[]");
+    localStorage.setItem(ROUND_STORAGE_KEY, JSON.stringify([...existingRounds, roundData]));
+    
+    setRoundId(newRoundId);
+    setIsSubmitting(false);
   };
-  
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Submit Anonymous Feedback</CardTitle>
+        <CardTitle>Create Feedback Request</CardTitle>
         <CardDescription>
-          Pay {FEEDBACK_COST} USDC to submit feedback. If your feedback is selected, you&apos;ll receive all collected USDC!
+          Create a new round to receive anonymous feedback
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-4">
-          <textarea
-            value={feedback}
-            onChange={(e) => setFeedback(e.target.value)}
-            className="w-full px-3 py-2 border rounded-md border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter your feedback here..."
-            rows={4}
-            disabled={isSubmitting}
-          />
-          <button
-            onClick={handleSubmit}
-            disabled={!feedback.trim() || isSubmitting}
-            className="px-4 py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600 disabled:bg-gray-400"
-          >
-            {isSubmitting ? "Submitting..." : "Submit Feedback"}
-          </button>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Prompt
+            </label>
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              className="w-full px-3 py-2 border rounded-md border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="What would you like feedback about?"
+              rows={4}
+              disabled={isSubmitting}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Content Link (optional)
+            </label>
+            <input
+              type="url"
+              value={contentLink}
+              onChange={(e) => setContentLink(e.target.value)}
+              className="w-full px-3 py-2 border rounded-md border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="https://..."
+              disabled={isSubmitting}
+            />
+          </div>
+          {!roundId ? (
+            <button
+              onClick={handleSubmit}
+              disabled={!prompt.trim() || isSubmitting}
+              className="px-4 py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600 disabled:bg-gray-400"
+            >
+              {isSubmitting ? "Creating..." : "Create Feedback Round"}
+            </button>
+          ) : (
+            <div className="flex flex-col gap-2 items-center p-4 bg-green-50 rounded-md">
+              <p className="text-green-600 font-medium">Round Created!</p>
+              <p className="text-sm text-gray-600">Share this link to receive feedback:</p>
+              <code className="bg-gray-100 p-2 rounded text-sm">
+                {`${window.location.origin}/feedback/${roundId}`}
+              </code>
+            </div>
+          )}
         </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function PaymentComponent({ feedback }: { feedback: string }) {
-  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'pending' | 'completed' | 'failed'>('idle');
-
-  const handlePaymentStarted = (e: any) => {
-    console.log('Payment started:', e);
-    setPaymentStatus('pending');
-    // Here we would store the feedback + transaction hash in local storage
-    localStorage.setItem('pendingFeedback', JSON.stringify({
-      feedback,
-      txHash: e.txHash,
-      timestamp: Date.now()
-    }));
-  };
-
-  const handlePaymentCompleted = (e: any) => {
-    console.log('Payment completed:', e);
-    setPaymentStatus('completed');
-  };
-
-  return (
-    <Card className="mt-4">
-      <CardHeader>
-        <CardTitle>Payment</CardTitle>
-        <CardDescription>Pay {FEEDBACK_COST} USDC on Base to submit your feedback</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="flex justify-center">
-          <DaimoPayButton
-            appId="pay-demo"
-            toChain={baseUSDC.chainId}
-            toUnits={FEEDBACK_COST}
-            toToken={getAddress(baseUSDC.token)}
-            toAddress={PROTOCOL_GUILD_ADDRESS}
-            onPaymentStarted={handlePaymentStarted}
-            onPaymentCompleted={handlePaymentCompleted}
-            disabled={paymentStatus !== 'idle'}
-          />
-        </div>
-        {paymentStatus === 'pending' && (
-          <p className="text-center text-yellow-600">Payment in progress...</p>
-        )}
-        {paymentStatus === 'completed' && (
-          <p className="text-center text-green-600">Payment completed! Your feedback has been submitted.</p>
-        )}
-        {paymentStatus === 'failed' && (
-          <p className="text-center text-red-600">Payment failed. Please try again.</p>
-        )}
       </CardContent>
     </Card>
   );
@@ -109,22 +100,14 @@ function PaymentComponent({ feedback }: { feedback: string }) {
 
 export default function MiniApp() {
   const { isSDKLoaded } = useFrameSDK();
-  const [currentFeedback, setCurrentFeedback] = useState("");
-  const [showPayment, setShowPayment] = useState(false);
 
   if (!isSDKLoaded) {
     return <div>Loading...</div>;
   }
 
-  const handleFeedbackSubmit = (feedback: string) => {
-    setCurrentFeedback(feedback);
-    setShowPayment(true);
-  };
-
   return (
     <div className="w-[400px] mx-auto py-2 px-2 space-y-4">
-      <FeedbackForm onSubmit={handleFeedbackSubmit} />
-      {showPayment && <PaymentComponent feedback={currentFeedback} />}
+      <CreateRoundForm />
     </div>
   );
 }
