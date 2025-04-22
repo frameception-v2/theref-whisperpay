@@ -98,7 +98,7 @@ function CreateRoundForm() {
                 onClick={() => {
                   // Format text for Farcaster cast
                   const castText = `📝 Looking for anonymous feedback:\n\n${prompt}\n\nLeave feedback at:\n${window.location.origin}/feedback/${roundId}`;
-                  const shareUrl = `https://warpcast.com/?text=${encodeURIComponent(castText)}`;
+                  const shareUrl = `https://warpcast.com/compose?text=${encodeURIComponent(castText)}`;
                   window.open(shareUrl, "_blank");
                 }}
                 className="mt-2 px-4 py-2 text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50"
