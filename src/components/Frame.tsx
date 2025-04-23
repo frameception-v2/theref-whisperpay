@@ -15,7 +15,7 @@ import {
   ESCROW_CONTRACT_ADDRESS,
   FEEDBACK_COST,
 } from "~/lib/constants";
-import { useAccount, useConnect, useProvider } from "wagmi";
+import { useAccount, useConnect, useSigner } from "wagmi";
 import { ethers } from "ethers";
 import ERC20ABI from "~/lib/abi/ERC20.json";
 
@@ -40,7 +40,7 @@ function FeedbackPage({ roundId }: { roundId: string }) {
   const [hasPaid, setHasPaid] = useState(false);
   const { address, isConnected } = useAccount();
   const { connect } = useConnect();
-  const provider = useProvider();
+  const { data: signer } = useSigner();
 
   useEffect(() => {
     const rounds: RoundData[] = JSON.parse(
@@ -56,6 +56,10 @@ function FeedbackPage({ roundId }: { roundId: string }) {
   const handleSubmit = () => {
     if (!content.trim()) return;
     setIsSubmitting(true);
+    if (!signer) {
+      setIsSubmitting(false);
+      return;
+    }
     const newFeedback: Feedback = {
       content: content.trim(),
       createdAt: Date.now(),
@@ -76,7 +80,6 @@ function FeedbackPage({ roundId }: { roundId: string }) {
 
   const handlePayment = async () => {
     setIsSubmitting(true);
-    const signer = provider.getSigner();
     const usdcContract = new ethers.Contract(
       USDC_CONTRACT_ADDRESS,
       ERC20ABI,
