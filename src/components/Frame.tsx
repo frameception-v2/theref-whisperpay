@@ -15,7 +15,7 @@ import {
   ESCROW_CONTRACT_ADDRESS,
   FEEDBACK_COST,
 } from "~/lib/constants";
-import { useAccount, useConnect, useSigner } from "wagmi";
+import { useAccount, useConnect } from "wagmi";
 import { ethers } from "ethers";
 import ERC20ABI from "~/lib/abi/ERC20.json";
 
@@ -39,8 +39,7 @@ function FeedbackPage({ roundId }: { roundId: string }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasPaid, setHasPaid] = useState(false);
   const { address, isConnected } = useAccount();
-  const { connect } = useConnect();
-  const { data: signer } = useSigner();
+  const { connect, connectors } = useConnect();
 
   useEffect(() => {
     const rounds: RoundData[] = JSON.parse(
@@ -56,7 +55,7 @@ function FeedbackPage({ roundId }: { roundId: string }) {
   const handleSubmit = () => {
     if (!content.trim()) return;
     setIsSubmitting(true);
-    if (!signer) {
+    if (!isConnected) {
       setIsSubmitting(false);
       return;
     }
@@ -80,6 +79,13 @@ function FeedbackPage({ roundId }: { roundId: string }) {
 
   const handlePayment = async () => {
     setIsSubmitting(true);
+    if (!(window as any).ethereum) {
+      console.error("Ethereum provider not found");
+      setIsSubmitting(false);
+      return;
+    }
+    const provider = new ethers.BrowserProvider((window as any).ethereum);
+    const signer = await provider.getSigner();
     const usdcContract = new ethers.Contract(
       USDC_CONTRACT_ADDRESS,
       ERC20ABI,
@@ -87,7 +93,7 @@ function FeedbackPage({ roundId }: { roundId: string }) {
     );
     const tx = await usdcContract.transfer(
       ESCROW_CONTRACT_ADDRESS,
-      ethers.utils.parseUnits(FEEDBACK_COST, 6)
+      ethers.parseUnits(FEEDBACK_COST, 6)
     );
     await tx.wait();
     setHasPaid(true);
@@ -102,7 +108,7 @@ function FeedbackPage({ roundId }: { roundId: string }) {
     return (
       <div className="w-[400px] mx-auto py-2 px-2 space-y-4">
         <button
-          onClick={() => connect()}
+          onClick={() => connect({ connector: connectors[0] })}
           className="px-4 py-2 text-white bg-blue-500 rounded-md"
         >
           Connect Wallet
